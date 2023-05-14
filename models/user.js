@@ -3,34 +3,34 @@ const Joi = require("joi");
 
 const { handleMongooseError } = require("../helpers/index");
 
+const validEnumValues = ["starter", "pro", "business"];
+
 const userSchema = new Schema({
-    name: {
-        type: String,
-        required: [true, 'Set password for user'],
-    },
     password: {
         type: String,
         minlength:6,
-        required: true,
+        required: [true, 'Set password for user'],
     },
     email: {
         type: String,
         required: [true, 'Email is required'],
         unique: true,
-    }/* ,
+    },
     subscription: {
     type: String,
-    enum: ["starter", "pro", "business"],
+    enum: validEnumValues,
     default: "starter"
     },
-    token: String, */
+    token: {
+        type: String,
+        default : null, 
+    }                                         
 },
 { versionKey: false, timestamps: false });
 
-userSchema.post("save", handleMongooseError);
+
 
 const registerSchema = Joi.object({
-    name: Joi.string().required(),
     email: Joi
         .string()
         .email({ minDomainSegments: 2, tlds: { allow: ["com", "net", "ua"] } })
@@ -40,6 +40,9 @@ const registerSchema = Joi.object({
         .string()
         .min(6)
         .required()
+    ,
+    subscription: Joi
+        .string()
     ,
 });
 
@@ -56,10 +59,21 @@ const loginSchema = Joi.object({
     ,
 });
 
+const updateSubscriptionSchema = Joi.object({
+    subscription: Joi
+        .string()
+		.valid(...validEnumValues)
+        .required()
+    ,
+}).unknown(false);
+
 const schemas = {
     registerSchema,
     loginSchema,
+    updateSubscriptionSchema,
 };
+
+userSchema.post("save", handleMongooseError);
 
 const User = model("user", userSchema);
 

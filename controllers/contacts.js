@@ -4,10 +4,29 @@ const { HttpError,ctrlWrapper } = require("../helpers/index");
 
 const listContacts = async (req, res) => {
 
-    const result = await Contact.find({}, "name email phone favorite");
-    res.json(result);
+    const { _id: owner } = req.user;
+    const { page = 1, limit = 20 } = req.query;
+    const { favorite } = req.query;                                                             
+    const skip = (page - 1) * limit;                                                                      
+    if (!favorite) {
+		const contacts = await Contact.find({ owner }, "-createdAt -updatedAt", { skip, limit });
+		res.json(contacts);
+    }
     
+	if (favorite) {
+		const boolValue = favorite === "true";
+		const contacts = await Contact.find(
+			{ owner, favorite: { $eq: boolValue } },
+			"-createdAt -updatedAt",
+			{
+				skip,
+				limit,
+			},
+		);
+		res.json(contacts);
+	}
 };
+    
 
 const getContactById = async (req, res) => {
 
@@ -23,8 +42,9 @@ const getContactById = async (req, res) => {
 };
 
 const addContact = async (req, res) => {
-   
-    const result = await Contact.create(req.body);
+
+    const { _id: owner } = req.user;
+    const result = await Contact.create({...req.body, owner});
     
     res.status(201).json(result);
    
