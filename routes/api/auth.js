@@ -1,5 +1,5 @@
 const express = require("express");
-const {validateBody, authenticate, upload, uploadChecker} = require("../../middlewares");
+const {validateBody, authenticate, updateStatus, upload, uploadChecker} = require("../../middlewares");
 const {schemas} = require("../../models/user");
 const ctrl = require("../../controllers/auth");
 
@@ -8,15 +8,32 @@ const router = express.Router();
 // signup
 router.post("/register", validateBody(schemas.registerSchema), ctrl.register); 
 
-// signin   
+
+// Verify
+router.get("/verify/:verificationToken", ctrl.verifyEmail);
+
+
+// Re-verify
+router.post("/verify", updateStatus(schemas.userEmailSchema, "missing required field email"), ctrl.resendVerify);
+
+
+// signin o login
 router.post("/login", validateBody(schemas.loginSchema), ctrl.login);
 
+
+//  Current User
 router.get("/current", authenticate, ctrl.getCurrent);
 
+
+// Logout
 router.post("/logout", authenticate, ctrl.logout);
 
-router.patch("/", authenticate, validateBody(schemas.updateSubscriptionSchema), ctrl.updateSubscription);
 
+// Update Subscription
+router.patch("/", authenticate, updateStatus(schemas.updateSubscriptionSchema, "missing field subscription"), ctrl.updateSubscription);
+
+
+// Update Avatar
 router.patch("/avatars", authenticate, upload.single("avatar"), uploadChecker, ctrl.updateAvatar);
 
 
